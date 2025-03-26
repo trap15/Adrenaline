@@ -105,8 +105,6 @@ SceUID usbdevice_modid = -1;
 
 AdrenalineConfig config;
 
-extern int menu_open;
-
 void GetFunctions() {
   ScePspemuDivide                     = (void *)(text_addr + 0x39F0 + 0x1);
   ScePspemuErrorExit                  = (void *)(text_addr + 0x4104 + 0x1);
@@ -278,39 +276,9 @@ int AdrenalineCompat(SceSize args, void *argp) {
       res = state.state | state.cable | state.connection | state.use_usb_charging;
     } else if (request->cmd == ADRENALINE_VITA_CMD_START_USB) {
       // Start usb
-      if (usbdevice_modid < 0 && !sceKernelIsPSVitaTV()) {
-        char *path;
-
-        if (config.usbdevice == USBDEVICE_MODE_INTERNAL_STORAGE) {
-          path = "sdstor0:int-lp-ign-user";
-        } else if (config.usbdevice == USBDEVICE_MODE_SD2VITA) {
-          path = "sdstor0:gcd-lp-ign-entire";
-        } else if (config.usbdevice == USBDEVICE_MODE_PSVSD) {
-          path = "sdstor0:uma-pp-act-a";
-        } else {
-          path = "sdstor0:xmc-lp-ign-userext";
-
-          SceUID fd = sceIoOpen(path, SCE_O_RDONLY, 0);
-
-          if (fd < 0)
-            path = "sdstor0:int-lp-ign-userext";
-          else
-            sceIoClose(fd);
-        }
-
-        usbdevice_modid = startUsb("ux0:app/" ADRENALINE_TITLEID "/sce_module/usbdevice.skprx", path, SCE_USBSTOR_VSTOR_TYPE_FAT);
-
-        // Response
-        res = (usbdevice_modid < 0) ? usbdevice_modid : 0;
-      } else {
-        // error already started
-        res = -1;
-      }
+      res = -1;
     } else if (request->cmd == ADRENALINE_VITA_CMD_STOP_USB) {
       // Stop usb
-      res = stopUsb(usbdevice_modid);
-      if (res >= 0)
-        usbdevice_modid = -1;
     } else if (request->cmd == ADRENALINE_VITA_CMD_PAUSE_POPS) {
       ScePspemuPausePops(1);
       sceDisplayWaitVblankStart();
@@ -320,8 +288,7 @@ int AdrenalineCompat(SceSize args, void *argp) {
       ScePspemuWritebackCache(adrenaline, ADRENALINE_SIZE);
       res = 0;
     } else if (request->cmd == ADRENALINE_VITA_CMD_RESUME_POPS) {
-      if (!menu_open)
-        ScePspemuPausePops(0);
+      ScePspemuPausePops(0);
       sceDisplayWaitVblankStart();
       sceDisplayWaitVblankStart();
       SetPspemuFrameBuffer((void *)SCE_PSPEMU_FRAMEBUFFER);
@@ -370,7 +337,7 @@ static int InitAdrenaline() {
   sceScreenShotEnable();
 
   // Lock USB connection and PS button
-  sceShellUtilLock(SCE_SHELL_UTIL_LOCK_TYPE_USB_CONNECTION | SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN_2);
+  sceShellUtilLock(SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN_2);
 
   // Create and start AdrenalinePowerTick thread
   SceUID thid = sceKernelCreateThread("AdrenalinePowerTick", AdrenalinePowerTick, 0x10000100, 0x1000, 0, 0, NULL);
@@ -392,10 +359,9 @@ static int InitAdrenaline() {
 
 int sceCompatSuspendResumePatched(int unk) {
   // Lock USB connection and PS button
-  sceShellUtilLock(SCE_SHELL_UTIL_LOCK_TYPE_USB_CONNECTION | SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN_2);
+  sceShellUtilLock(SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN_2);
 
-  if (!menu_open)
-    ScePspemuPausePops(0);
+  ScePspemuPausePops(0);
 
   return TAI_CONTINUE(int, sceCompatSuspendResumeRef, unk);
 }
@@ -411,14 +377,6 @@ static int sceCompatWriteSharedCtrlPatched(SceCtrlDataPsp *pad_data) {
 
   pad_data->Buttons &= ~SCE_CTRL_PSBUTTON;
   pad_data->Buttons |= (pad.buttons & SCE_CTRL_PSBUTTON);
-
-  if (menu_open) {
-    pad_data->Buttons = SCE_CTRL_PSBUTTON;
-    pad_data->Lx = 128;
-    pad_data->Ly = 128;
-    pad_data->Rx = 128;
-    pad_data->Ry = 128;
-  }
 
   return TAI_CONTINUE(int, sceCompatWriteSharedCtrlRef, pad_data);
 }
@@ -493,14 +451,7 @@ static int ScePspemuGetParamPatched(char *discid, int *parentallevel, char *game
 static int ScePspemuGetStartupPngPatched(int num, void *png_buf, int *png_size, int *unk) {
   int num_startup_png = TAI_CONTINUE(int, ScePspemuGetStartupPngRef, num, png_buf, png_size, unk);
 
-  if (config.skip_logo) {
-    num_startup_png = 0;
-  } else {
-    // Insert custom startdat.png
-    memcpy(png_buf, startdat, size_startdat);
-    *png_size = size_startdat;
-    num_startup_png = 1;
-  }
+  num_startup_png = 0;
 
   return num_startup_png;
 }
@@ -515,6 +466,8 @@ int module_start(SceSize args, void *argp) {
   // Read config
   memset(&config, 0, sizeof(AdrenalineConfig));
   ReadFile("ux0:app/" ADRENALINE_TITLEID "/adrenaline.bin", &config, sizeof(AdrenalineConfig));
+  if (config.magic[0] != ADRENALINE_CFG_MAGIC_1 || config.magic[1] != ADRENALINE_CFG_MAGIC_2)
+    memset(&config, 0, sizeof(AdrenalineConfig));
   if ((uint32_t)config.psp_screen_scale_x == 0)
     config.psp_screen_scale_x = 2.0f;
   if ((uint32_t)config.psp_screen_scale_y == 0)

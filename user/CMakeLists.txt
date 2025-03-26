@@ -11,7 +11,7 @@ endif()
 project(adrenaline_user)
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -nostartfiles -fno-lto")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q -Wall -O3 -nostartfiles -fno-lto -Wno-format-truncation")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -fno-exceptions")
 
 # Builds
@@ -61,7 +61,7 @@ target_link_libraries(adrenaline_user
   AdrenalineKernel_stub
   taihen_stub
   vita2d
-  vitashaders
+#  vitashaders
   c
   m
   SceAppMgr_stub
@@ -78,6 +78,7 @@ target_link_libraries(adrenaline_user
   SceKernelThreadMgr_stub
   SceLibKernel_stub
   SceMtpIfDriver_stub
+  SceNet_stub_weak
   ScePgf_stub_weak
   ScePower_stub
   SceProcessmgr_stub

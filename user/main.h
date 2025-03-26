@@ -33,7 +33,7 @@
 #define MAX_NAME_LENGTH 256
 
 #define ADRENALINE_CFG_MAGIC_1 0x31483943
-#define ADRENALINE_CFG_MAGIC_2 0x334F4E33
+#define ADRENALINE_CFG_MAGIC_2 0x334F4E35
 
 enum MemoryStickLocations {
   MEMORY_STICK_LOCATION_UX0,
@@ -67,14 +67,11 @@ enum AdrenalineScreenModes {
 
 typedef struct {
   int magic[2];
-  int graphics_filtering;
   int no_smooth_graphics;
-  int flux_mode;
   int screen_size;
   int ms_location;
   int use_ds3_ds4;
   int screen_mode;
-  int skip_logo;
   float psp_screen_scale_x;
   float psp_screen_scale_y;
   float ps1_screen_scale_x;

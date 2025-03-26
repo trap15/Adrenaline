@@ -182,7 +182,9 @@ typedef struct {
 #define ADRENALINE_SIZE 0x2000
 #define ADRENALINE_ADDRESS 0xABCDE000
 
+#if 0
 #define DRAW_NATIVE 0xABCDEF00
+#endif
 #define NATIVE_FRAMEBUFFER 0x0A400000
 
 #define CONVERT_ADDRESS(addr) (0x68000000 + (addr & 0x0FFFFFFF))

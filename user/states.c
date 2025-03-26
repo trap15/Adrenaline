@@ -100,7 +100,11 @@ int saveFrameBuffer(SceUID fd) {
 
   int i = 0;
 
+#ifdef DRAW_NATIVE
   int draw_native = *(uint32_t *)CONVERT_ADDRESS(DRAW_NATIVE);
+#else
+  int draw_native = 0;
+#endif
   SceAdrenaline *adrenaline = (SceAdrenaline *)ScePspemuConvertAddress(ADRENALINE_ADDRESS, KERMIT_INPUT_MODE, ADRENALINE_SIZE);
 
   if (draw_native) {

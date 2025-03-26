@@ -165,7 +165,7 @@ int sceIoGetstatPatched(const char *file, SceIoStat *stat) {
 extern void *pops_data;
 
 int sceDisplaySetFrameBufForCompatPatched(int a1, int a2, int a3, int a4, int a5, SceDisplayFrameBuf *pParam) {
-  if (config.graphics_filtering != 0) {
+  if (0) {
     if (pParam == NULL) {
       static SceDisplayFrameBuf param;
       param.size = sizeof(SceDisplayFrameBuf);

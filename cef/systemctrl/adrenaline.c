@@ -323,7 +323,9 @@ int initAdrenaline() {
 
 	sceKernelStartThread(thid, 0, NULL);
 
-  *(u32 *)DRAW_NATIVE = 0;
+#ifdef DRAW_NATIVE
+	*(u32 *)DRAW_NATIVE = 0;
+#endif
 
 	return 0;
 }
